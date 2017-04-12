@@ -1,21 +1,25 @@
-#-- Iván Felipe Rodríguez &  Remi Megret
+#-- Ivan Felipe Rodriguez &  Remi Megret
+# USAGE
+# python run.py --dataset data.txt --labels labels.txt --output experiment.csv
 
 import copy
 import os
 import pandas as pd
 import numpy as np
+import argparse
 import matplotlib.pyplot as plt
 try:
     from sklearn.model_selection import train_test_split
 except ImportError:
     from sklearn.cross_validation import train_test_split
-
-# libact classes
+ libact classes
 from libact.base.dataset import Dataset, import_libsvm_sparse
 from libact.models import SklearnAdapter
 from libact.models import *
 from libact.query_strategies import *
 from libact.labelers import IdealLabeler
+from sklearn.ensemble import GradientBoostingClassifier
+
 
 
 def run(trn_ds, tst_ds, lbr, model, qs, quota, fully_labeled_trn_ds):
@@ -80,7 +84,7 @@ def active_learning(data, labels, test_size, n_labeled):
     rows = ["E_in_1", "E_in_2", "E_out_1", "E_out_2", "E_full_1", "E_full_2"]
     data = pd.DataFrame(data=[E_in_1, E_in_2, E_out_1,
                               E_out_2, E_full_1, E_full_2], index=rows)
-    return data
+    return data.transpose()
 
 
 def plotting(data, colors=['darkblue', 'orange', 'b', 'r', 'lightblue', 'pink']):
@@ -108,11 +112,18 @@ def AL(data, labels, test_size, n_label, num_experiments):
     return pd.Panel(experiments)
 
 def main():
-    data=np.loadtxt("data.txt")
-    labels=np.loadtxt("labels.txt")
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-i", "--dataset", required = True, help = "Path to the data")
+    ap.add_argument("-j", "--labels", required = True, help = "Path to the labels")
+    ap.add_argument("-k", "--output", required = True, help = "output")
+    args = vars(ap.parse_args())
+    
+    data=np.loadtxt(args["dataset"])
+    labels=np.loadtxt(args["labels"])
     test_size = 0.25 # the percentage of samples in the dataset that will be                  # randomly selected and assigned to the test set
     n_labeled = 4 # number of samples that are initially labeled
     experiment = active_learning(data,labels,test_size,n_labeled)
-    experiment.to_csv('experiment.csv')
+    experiment.to_csv(args["output"])
+    
 main()
 
