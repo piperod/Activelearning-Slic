@@ -2,6 +2,8 @@
 
 import copy
 import os
+import datetime
+import time
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,6 +11,7 @@ try:
     from sklearn.model_selection import train_test_split
 except ImportError:
     from sklearn.cross_validation import train_test_split
+from sklearn.ensemble import GradientBoostingClassifier
 
 # libact classes
 from libact.base.dataset import Dataset, import_libsvm_sparse
@@ -20,8 +23,10 @@ from libact.labelers import IdealLabeler
 
 def run(trn_ds, tst_ds, lbr, model, qs, quota, fully_labeled_trn_ds):
     E_in, E_out, E_full = [], [], []
-
-    for _ in range(quota):
+    
+    start_time = datetime.datetime.now()
+    for i in range(quota):
+        print("Step {}/{}".format(i,quota-1), " [{}]".format(datetime.datetime.now()), flush=True)
         # Standard usage of libact objects
         ask_id = qs.make_query()
         X, _ = zip(*trn_ds.data)
@@ -34,6 +39,9 @@ def run(trn_ds, tst_ds, lbr, model, qs, quota, fully_labeled_trn_ds):
         E_out = np.append(E_out, 1 - model.score(tst_ds))
         E_full = np.append(E_full, 1 - model.score(fully_labeled_trn_ds))
 
+        print("  Errors: E_in={:05.3f}, E_out={:05.3f}, E_full={:05.3f}".format(E_in[-1],E_out[-1],E_full[-1]), flush=True)
+        
+        print("  Elapsed={}".format( str(datetime.datetime.now()-start_time)  ), flush=True)
     return E_in, E_out, E_full
 
 
@@ -58,10 +66,12 @@ def active_learning(data, labels, test_size, n_labeled):
     trn_ds2 = copy.deepcopy(trn_ds)
     lbr = IdealLabeler(fully_labeled_trn_ds)
 
-    quota = len(y_train) - n_labeled    # number of samples to query
+    #quota = len(y_train) - n_labeled    # number of samples to query
+    quota = 1000
 
     # Comparing UncertaintySampling strategy with RandomSampling.
     # model is the base learner, e.g. LogisticRegression, SVM ... etc.
+    print("## Running UncertaintySampling... [{}]".format(datetime.datetime.now()), flush=True)
     clf = SklearnProbaAdapter(GradientBoostingClassifier(
         n_estimators=5, learning_rate=1.0, max_depth=2, random_state=0))
     qs = UncertaintySampling(trn_ds, method='lc', model=clf)
@@ -69,6 +79,7 @@ def active_learning(data, labels, test_size, n_labeled):
     E_in_1, E_out_1, E_full_1 = run(
         trn_ds, tst_ds, lbr, model, qs, quota, fully_labeled_trn_ds)
 
+    print("## Running RandomSampling... [{}]".format(datetime.datetime.now()), flush=True)
     qs2 = RandomSampling(trn_ds2)
     model = clf
     E_in_2, E_out_2, E_full_2 = run(
@@ -77,6 +88,7 @@ def active_learning(data, labels, test_size, n_labeled):
     # Plot the learning curve of UncertaintySampling to RandomSampling
     # The x-axis is the number of queries, and the y-axis is the corresponding
     # error rate.
+    print("## Preparing dataframe... [{}]".format(datetime.datetime.now()), flush=True)
     rows = ["E_in_1", "E_in_2", "E_out_1", "E_out_2", "E_full_1", "E_full_2"]
     data = pd.DataFrame(data=[E_in_1, E_in_2, E_out_1,
                               E_out_2, E_full_1, E_full_2], index=rows)
@@ -113,6 +125,7 @@ def main():
     test_size = 0.25 # the percentage of samples in the dataset that will be                  # randomly selected and assigned to the test set
     n_labeled = 4 # number of samples that are initially labeled
     experiment = active_learning(data,labels,test_size,n_labeled)
+    print("Saving to 'experiment.csv'...", flush=True)
     experiment.to_csv('experiment.csv')
 main()
 
