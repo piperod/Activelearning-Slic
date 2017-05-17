@@ -108,7 +108,7 @@ def plotting(data, colors=['darkblue', 'orange', 'b', 'r', 'lightblue', 'pink'])
     plt.show()
 
 
-def AL(data, labels, test_size, n_label, num_experiments,quota=1000):
+def AL(data, labels, test_size, n_label, num_experiments,quota=100):
     experiments = {}
     for i in range(num_experiments):
         result = active_learning(data, labels, test_size, n_labeled,quota)
@@ -121,7 +121,7 @@ def main():
     ap.add_argument("-j", "--labels", required = True, help = "Path to the labels")
     ap.add_argument("-k", "--output", required = True, help = "output")
     ap.add_argument("-l", "--quota", required = False, help = "Quota")
-    ap.add_argument("-m", "--AL", required = False, help = "Runs the experiment 20 times for averaging")
+    ap.add_argument("-m", "--AL", required = False, help = "Runs the experiment 10 times for averaging")
     args = vars(ap.parse_args())
     
     data=np.loadtxt(args["dataset"])
@@ -131,7 +131,7 @@ def main():
     experiment = active_learning(data,labels,test_size,n_labeled,args["quota"])
     experiment.to_csv(args["output"])
     if args["AL"]:
-        panel=AL(data, labels, test_size, n_label, num_experiments,quota)
+        panel=AL(data, labels, test_size, n_label,10)
         panel.to_json(args["output"])
     
 main()
