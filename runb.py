@@ -128,8 +128,8 @@ def main():
     labels=np.loadtxt(args["labels"])
     test_size = 0.25 # the percentage of samples in the dataset that will be                  # randomly selected and assigned to the test set
     n_labeled = 4 # number of samples that are initially labeled
-    experiment = active_learning(data,labels,test_size,n_labeled,args["quota"])
-    experiment.to_csv(args["output"])
+    #experiment = active_learning(data,labels,test_size,n_labeled,args["quota"])
+    #experiment.to_csv(args["output"])
     if args["AL"]:
         panel=AL(data, labels, test_size, n_label,10)
         panel.to_json(args["output"])
